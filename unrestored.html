@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Unrestored tab</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="unrestored-body">
+  <main class="page">
+    <section class="card">
+      <h1>This tab could not be restored automatically</h1>
+      <p class="help">
+        Chrome extensions cannot always open internal browser pages, extension pages,
+        malformed URLs, or pages blocked by browser policy. The original URL is shown below.
+      </p>
+      <h2>Saved title</h2>
+      <p id="saved-title" class="copy-box">Unknown</p>
+      <h2>Original URL</h2>
+      <p class="copy-box"><code id="saved-url">Unknown</code></p>
+      <h2>Reason</h2>
+      <p id="reason" class="copy-box">Unknown</p>
+      <p class="help">
+        You can copy the URL and try opening it manually. Some pages, such as
+        chrome://settings or chrome://extensions, may need to be opened manually.
+      </p>
+    </section>
+  </main>
+  <script src="unrestored.js"></script>
+</body>
+</html>

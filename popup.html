@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Session TXT/JSON Saver</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="popup">
+    <header>
+      <h1>Session Saver</h1>
+      <p class="subtitle">Export and import Chrome windows, tabs, and tab groups.</p>
+    </header>
+
+    <section class="card">
+      <h2>Export current session</h2>
+      <p class="help">
+        Saves accessible normal/popup Chrome windows. The file is local and is not uploaded anywhere.
+      </p>
+
+      <div class="option-row">
+        <label>
+          <input id="include-popup-windows" type="checkbox" checked>
+          Include popup windows
+        </label>
+      </div>
+      <div class="option-row">
+        <label>
+          <input id="include-window-geometry" type="checkbox" checked>
+          Save window size/position
+        </label>
+      </div>
+      <div class="option-row">
+        <label>
+          <input id="include-incognito" type="checkbox">
+          Include incognito windows if this extension is allowed in incognito
+        </label>
+      </div>
+
+      <div class="button-row">
+        <button id="export-json" type="button">Download .json</button>
+        <button id="export-txt" type="button" class="secondary">Download .txt</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Import session</h2>
+      <p class="help">
+        Opens the saved session in new windows. Your current windows are not closed or overwritten.
+      </p>
+
+      <label class="file-label" for="session-file">Choose sessions.json or sessions.txt</label>
+      <input id="session-file" type="file" accept=".json,.txt,application/json,text/plain">
+
+      <div class="option-row">
+        <label>
+          <input id="restore-window-geometry" type="checkbox" checked>
+          Restore window size/position when possible
+        </label>
+      </div>
+      <div class="option-row">
+        <label>
+          <input id="restore-groups" type="checkbox" checked>
+          Restore tab groups
+        </label>
+      </div>
+      <div class="option-row">
+        <label>
+          <input id="restore-pinned-tabs" type="checkbox" checked>
+          Restore pinned tabs
+        </label>
+      </div>
+      <div class="option-row">
+        <label>
+          <input id="restore-muted-tabs" type="checkbox" checked>
+          Restore muted tabs
+        </label>
+      </div>
+      <div class="option-row">
+        <label>
+          <input id="focus-first-restored-window" type="checkbox" checked>
+          Focus first restored window after import
+        </label>
+      </div>
+      <div class="option-row">
+        <label>
+          <input id="allow-incognito-restore" type="checkbox">
+          Try to restore incognito windows if Chrome allows it
+        </label>
+      </div>
+
+      <button id="import-session" type="button">Import selected file</button>
+    </section>
+
+    <section id="status" class="status" aria-live="polite">
+      Ready.
+    </section>
+  </main>
+
+  <script src="popup.js"></script>
+</body>
+</html>

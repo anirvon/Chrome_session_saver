@@ -1,0 +1,170 @@
+:root {
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --text: #202124;
+  --muted: #5f6368;
+  --border: #dadce0;
+  --primary: #1a73e8;
+  --primary-dark: #1557b0;
+  --danger: #b3261e;
+  --success: #137333;
+  --warning: #b06000;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 360px;
+  max-width: 420px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+}
+
+.popup {
+  padding: 14px;
+}
+
+header {
+  margin-bottom: 12px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+h2 {
+  margin: 0 0 6px 0;
+  font-size: 15px;
+}
+
+.subtitle,
+.help {
+  margin: 4px 0 10px 0;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 2px rgba(60, 64, 67, 0.08);
+}
+
+.option-row {
+  margin: 8px 0;
+  line-height: 1.35;
+}
+
+.option-row label {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+input[type="checkbox"] {
+  margin-top: 2px;
+}
+
+.button-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+button {
+  appearance: none;
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 11px;
+  background: var(--primary);
+  color: white;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: var(--primary-dark);
+}
+
+button.secondary {
+  background: #e8f0fe;
+  color: #174ea6;
+}
+
+button.secondary:hover:not(:disabled) {
+  background: #d2e3fc;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.file-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--muted);
+}
+
+input[type="file"] {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.status {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--muted);
+  line-height: 1.35;
+  white-space: pre-wrap;
+}
+
+.status.success {
+  border-color: #c5e1ca;
+  background: #f1f8f4;
+  color: var(--success);
+}
+
+.status.error {
+  border-color: #f2b8b5;
+  background: #fceeee;
+  color: var(--danger);
+}
+
+.status.warning {
+  border-color: #ffd8a8;
+  background: #fff7ed;
+  color: var(--warning);
+}
+
+/* Unrestored tab page */
+body.unrestored-body {
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.page {
+  padding: 28px;
+}
+
+code {
+  word-break: break-all;
+}
+
+.copy-box {
+  background: #f8f9fa;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}

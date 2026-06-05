@@ -1,0 +1,76 @@
+{
+  "schema": "session-txt-json-saver",
+  "schemaVersion": 1,
+  "exportedBy": {
+    "name": "Session TXT/JSON Saver",
+    "version": "0.1.0",
+    "manifestVersion": 3
+  },
+  "savedAt": "2026-06-04T12:00:00.000Z",
+  "suggestedFilenameBase": "sessions-20260604-120000",
+  "captureOptions": {
+    "includeWindowGeometry": true,
+    "includePopupWindows": true,
+    "includeIncognito": false
+  },
+  "limitations": [
+    "Some internal browser pages such as chrome:// URLs may not be restorable by extensions.",
+    "Incognito windows are only available if the extension is enabled in incognito mode.",
+    "Chrome does not expose user-assigned window names through the standard extension windows API."
+  ],
+  "windows": [
+    {
+      "savedWindowIndex": 0,
+      "type": "normal",
+      "state": "normal",
+      "focused": true,
+      "incognito": false,
+      "alwaysOnTop": false,
+      "geometry": {
+        "left": 100,
+        "top": 100,
+        "width": 1200,
+        "height": 800
+      },
+      "tabs": [
+        {
+          "savedTabIndex": 0,
+          "url": "https://www.example.com/",
+          "pendingUrl": null,
+          "title": "Example Domain",
+          "pinned": false,
+          "active": true,
+          "highlighted": true,
+          "audible": false,
+          "muted": false,
+          "discarded": false,
+          "autoDiscardable": true,
+          "groupKey": "window-0-group-0"
+        },
+        {
+          "savedTabIndex": 1,
+          "url": "https://developer.chrome.com/docs/extensions/",
+          "pendingUrl": null,
+          "title": "Chrome Extensions documentation",
+          "pinned": false,
+          "active": false,
+          "highlighted": false,
+          "audible": false,
+          "muted": false,
+          "discarded": false,
+          "autoDiscardable": true,
+          "groupKey": "window-0-group-0"
+        }
+      ],
+      "groups": [
+        {
+          "groupKey": "window-0-group-0",
+          "title": "Research",
+          "color": "blue",
+          "collapsed": false,
+          "firstTabIndex": 0
+        }
+      ]
+    }
+  ]
+}
