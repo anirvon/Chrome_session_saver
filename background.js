@@ -579,7 +579,10 @@ function normalizeUrlForOpen(url) {
 
   // Treat bare domains or search text safely by opening a search query instead
   // of passing malformed input to chrome.tabs.create().
-  return `https://www.google.com/search?q=${encodeURIComponent(trimmed)}`;
+  // return `https://www.google.com/search?q=${encodeURIComponent(trimmed)}`;
+  // OR instead open a new tab with:
+  return "chrome://newtab/";
+  
 }
 
 function buildUnrestoredUrl(savedTab, reason) {

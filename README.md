@@ -139,7 +139,3 @@ Why:
 - `tabGroups`: needed to read and restore Chrome tab group titles, colors, and collapsed state.
 
 No host permissions are requested. No downloads permission is requested; the popup uses a local `Blob` download initiated by the user's click.
-
-## Before publishing
-
-Read `docs/CHROME_STORE_NOTES.md`, `docs/PRIVACY_POLICY_DRAFT.md`, and `docs/STORE_LISTING_DRAFT.md` before publishing. You will need your own public privacy policy URL for the Chrome Web Store listing.
