@@ -18,9 +18,10 @@ Use this checklist before pushing to GitHub or submitting to the Chrome Web Stor
 4. Click Open window selector.
 5. Confirm all windows are selected by default.
 6. Confirm all tab groups are selected by default.
-7. Click Download .json.
-8. Open the file in a text editor.
-9. Confirm the file contains selected windows, tabs, and groups.
+7. Confirm each window row has a + expand button.
+8. Click Download .json.
+9. Open the file in a text editor.
+10. Confirm the file contains selected windows, tabs, and groups.
 
 ## Unselect a window
 
@@ -39,6 +40,27 @@ Use this checklist before pushing to GitHub or submitting to the Chrome Web Stor
 5. Confirm ungrouped tabs in the selected window remain included.
 6. Import the file.
 7. Confirm only selected groups are restored.
+
+## Select individual tabs in expanded view
+
+1. Open the selector.
+2. Click the **+** button on a window row.
+3. Confirm the expanded view shows ungrouped tabs and grouped tabs.
+4. Unselect one individual tab from an otherwise selected window.
+5. Confirm the window checkbox becomes indeterminate.
+6. Download `.json`.
+7. Confirm the unselected tab is omitted from the file.
+8. Import the file and confirm only the selected tabs are restored.
+
+## Partially select a tab group
+
+1. Open the selector.
+2. Expand a window containing a tab group with two or more tabs.
+3. Unselect one tab inside the group, leaving at least one other tab in the group selected.
+4. Confirm the group checkbox becomes indeterminate.
+5. Confirm the warning panel explains that partial tab groups will restore with only selected tabs.
+6. Download and import the file.
+7. Confirm the group is recreated with only the selected tabs.
 
 ## No selection
 

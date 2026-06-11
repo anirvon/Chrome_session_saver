@@ -25,13 +25,13 @@ To provide its core session export and import features, Chrome Session Saver may
 - Chrome tab group membership
 - Chrome tab group metadata, such as group title, color, and collapsed state
 
-This information is accessed only when needed to perform a user-requested action, such as exporting selected windows and tab groups or restoring a user-selected session file.
+This information is accessed only when needed to perform a user-requested action, such as exporting selected windows, tab groups, and tabs or restoring a user-selected session file.
 
 ## How the Data Is Used
 
 Chrome Session Saver uses the data listed above only for the following purposes:
 
-- To display a local selector for open windows and tab groups
+- To display a local selector for open windows, tab groups, and, when expanded by the user, individual tabs
 - To create a local session file containing the user's selected windows, tabs, and tab groups
 - To restore windows, tabs, and tab groups from a user-selected session file
 - To show status messages and warnings in the extension interface

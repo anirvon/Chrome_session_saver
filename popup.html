@@ -10,15 +10,19 @@
   <main class="popup">
     <header>
       <h1>Chrome Session Saver</h1>
-      <p class="subtitle">Export selected windows and tab groups, or import a saved session file.</p>
+      <p class="subtitle">Download the full session, export selected windows and tab groups, or import a saved session file.</p>
     </header>
 
     <section class="card">
       <h2>Export</h2>
       <p class="help">
-        Open the full-page selector to choose which windows and tab groups to save.
+        Download the full current session immediately, or open the full-page selector to choose windows and tab groups.
       </p>
-      <button id="open-selector" type="button">Open window selector</button>
+      <div class="button-column">
+        <button id="download-full-json" type="button">Download full session .json</button>
+        <button id="download-full-txt" type="button" class="secondary">Download full session .txt</button>
+        <button id="open-selector" type="button" class="secondary">Open window selector</button>
+      </div>
     </section>
 
     <section class="card">

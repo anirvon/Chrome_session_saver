@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Chrome Session Saver",
   "short_name": "Session Saver",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Export and import open Chrome windows, tabs, and tab groups using local sessions.json or sessions.txt files.",
   "minimum_chrome_version": "89",
   "offline_enabled": true,

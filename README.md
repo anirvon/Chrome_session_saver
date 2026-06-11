@@ -2,14 +2,15 @@
 
 Chrome Session Saver is a Manifest V3 Chrome extension that exports and imports open Chrome windows, tabs, and tab groups using local `sessions.json` or `sessions.txt` files.
 
-Version `0.2.0` adds a full-page selective export interface. You can choose whole windows and, where present, whole tab groups. Individual tabs are intentionally not exposed as checkboxes in this version.
+Version `0.2.1` includes both a fast full-session export from the popup and a full-page selective export interface. You can immediately download the full current session, choose whole windows and tab groups, or expand a window with the + button to select or unselect individual tabs.
 
 ## Features
 
 - Export selected Chrome windows to a local `.json` or `.txt` file.
 - Select or unselect whole windows before exporting.
 - Select or unselect whole Chrome tab groups inside selected windows.
-- Include ungrouped tabs automatically when their window is selected.
+- Expand any window row with the + button to select or unselect individual tabs.
+- Include ungrouped tabs automatically when their window is selected, unless individual ungrouped tabs are unselected in expanded view.
 - Preserve tab order, tab URLs, titles, pinned state, active tab state, muted state, window type, optional window geometry, and tab group metadata.
 - Import a saved session into new Chrome windows without closing or overwriting current windows.
 - Restore tab group title, color, and collapsed state when possible.
@@ -49,7 +50,8 @@ The extension does not request host permissions and does not inject scripts into
 8. Click the extension icon.
 9. Click **Open window selector**.
 10. Select the windows and tab groups you want to save.
-11. Click **Download .json** or **Download .txt**.
+11. Optional: click the **+** button on any window row to expand it and select or unselect individual tabs.
+12. Click **Download .json** or **Download .txt**.
 12. To test import, click the extension icon again, choose the exported file, and click **Import selected file**.
 
 ## Creating a Chrome Web Store ZIP
@@ -59,13 +61,13 @@ The Chrome Web Store upload ZIP must contain `manifest.json` at the root of the 
 From PowerShell on Windows 11, run this from inside the extension folder:
 
 ```powershell
-Compress-Archive -Path * -DestinationPath ..\chrome-session-saver-0.2.0-webstore.zip -Force
+Compress-Archive -Path * -DestinationPath ..\chrome-session-saver-0.2.1-webstore.zip -Force
 ```
 
 Check the ZIP root:
 
 ```powershell
-tar -tf ..\chrome-session-saver-0.2.0-webstore.zip | Select-Object -First 20
+tar -tf ..\chrome-session-saver-0.2.1-webstore.zip | Select-Object -First 20
 ```
 
 The first files should look like:
@@ -83,12 +85,13 @@ styles.css
 
 ## Selective export behavior
 
-The full-page selector works at two levels:
+The full-page selector works at three levels:
 
-1. **Window selection** — selecting a window includes its ungrouped tabs and any selected groups inside that window.
-2. **Tab group selection** — selecting a tab group includes all tabs in that group. Unselecting a group omits all tabs in that group.
+1. **Window selection** — selecting or unselecting a window selects or unselects every tab in that window.
+2. **Tab group selection** — selecting or unselecting a tab group selects or unselects every tab in that group.
+3. **Individual tab selection** — click the **+** button on a window row to expand it and select or unselect individual tabs.
 
-Individual tab selection is not part of version `0.2.0`.
+Window and group checkboxes become indeterminate when only some tabs are selected. A window is written to the exported file if it contains at least one selected tab. A tab group is written to the exported file if at least one tab in that group is selected. If only part of a tab group is selected, that group is restored later with only the selected tabs.
 
 The extension automatically excludes its own extension pages, such as the export page, so those pages are not accidentally written into the session file.
 
@@ -122,7 +125,7 @@ See [`PRIVACY_POLICY.md`](PRIVACY_POLICY.md) for the full policy draft.
 
 ## Version history
 
-### 0.2.0
+### 0.2.1
 
 - Renamed extension to **Chrome Session Saver**.
 - Added a full-page selective export UI.

@@ -11,7 +11,7 @@
  */
 
 const EXTENSION_NAME = "Chrome Session Saver";
-const EXTENSION_VERSION = "0.2.0";
+const EXTENSION_VERSION = "0.2.1";
 const SCHEMA_ID = "chrome-session-saver";
 const LEGACY_SCHEMA_ID = "session-txt-json-saver";
 const SCHEMA_VERSION = 1;
@@ -132,9 +132,10 @@ async function captureCurrentSession(options) {
     },
     selection: {
       mode: "all-accessible-windows",
+      individualTabsSelectable: false,
       notes: [
-        "This file contains all windows and tab groups selected by the user at export time.",
-        "Individual tab selection is not used in this version; grouped tabs are included or excluded as whole groups."
+        "This full-session export contains every accessible window and tab captured at export time.",
+        "Use the full-page selector for window, tab group, or individual tab selection."
       ]
     },
     limitations: buildStandardLimitations(),
@@ -153,7 +154,65 @@ async function captureCurrentSession(options) {
     savedWindowIndex += 1;
   }
 
+  session.warnings = uniqueStrings([
+    ...session.warnings,
+    ...buildCapturedSessionWarnings(session)
+  ]);
+
   return session;
+}
+
+function buildCapturedSessionWarnings(session) {
+  const warnings = [];
+  const windows = Array.isArray(session.windows) ? session.windows : [];
+  const tabCount = windows.reduce((sum, win) => sum + (Array.isArray(win.tabs) ? win.tabs.length : 0), 0);
+
+  if (tabCount === 0) {
+    warnings.push("No accessible tabs were captured. Export will be disabled until Chrome exposes at least one restorable tab to this extension.");
+  }
+
+  const urlRisks = collectPotentiallyUnrestorableUrls(session);
+  if (urlRisks.internal > 0) {
+    warnings.push(`${urlRisks.internal} captured tab(s) use internal browser or extension URLs that Chrome may not allow this extension to reopen directly. Import will create placeholder tabs for URLs Chrome rejects.`);
+  }
+  if (urlRisks.file > 0) {
+    warnings.push(`${urlRisks.file} captured tab(s) use file:// URLs. Restoring local files may require enabling file URL access for the extension.`);
+  }
+
+  const incognitoWindows = windows.filter((win) => win.incognito).length;
+  if (incognitoWindows > 0) {
+    warnings.push(`${incognitoWindows} captured incognito window(s) are included. Importing them as incognito requires this extension to be allowed in incognito mode and the import option to be enabled.`);
+  }
+
+  const popupWindows = windows.filter((win) => win.type === "popup").length;
+  if (popupWindows > 0) {
+    warnings.push(`${popupWindows} captured popup window(s) are included. Chrome may restore popup dimensions/placement differently from the original.`);
+  }
+
+  if (session.captureOptions && session.captureOptions.includeWindowGeometry) {
+    warnings.push("Window size and position are saved, but restoration can vary on Windows 11 if monitors, display scaling, or virtual desktops have changed.");
+  }
+
+  return warnings;
+}
+
+function collectPotentiallyUnrestorableUrls(session) {
+  const result = { internal: 0, file: 0 };
+  for (const win of session.windows || []) {
+    for (const tab of win.tabs || []) {
+      const url = String(tab.url || tab.pendingUrl || "");
+      if (/^file:/i.test(url)) {
+        result.file += 1;
+      } else if (/^(chrome|chrome-extension|edge|about):/i.test(url)) {
+        result.internal += 1;
+      }
+    }
+  }
+  return result;
+}
+
+function uniqueStrings(values) {
+  return [...new Set(values.filter(Boolean))];
 }
 
 function buildStandardLimitations() {
@@ -620,9 +679,7 @@ function normalizeUrlForOpen(url) {
 
   // Treat bare domains or search text safely by opening a search query instead
   // of passing malformed input to chrome.tabs.create().
-  // return `https://www.google.com/search?q=${encodeURIComponent(trimmed)}`;
-  // OR instead open a new tab with:
-  return "chrome://newtab/";
+  return `https://www.google.com/search?q=${encodeURIComponent(trimmed)}`;
 }
 
 function buildUnrestoredUrl(savedTab, reason) {

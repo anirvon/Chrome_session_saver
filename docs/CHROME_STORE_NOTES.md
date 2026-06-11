@@ -7,12 +7,12 @@ Upload a ZIP file with `manifest.json` at the root of the ZIP.
 Recommended PowerShell command from inside the extension folder:
 
 ```powershell
-Compress-Archive -Path * -DestinationPath ..\chrome-session-saver-0.2.0-webstore.zip -Force
+Compress-Archive -Path * -DestinationPath ..\chrome-session-saver-0.2.1-webstore.zip -Force
 ```
 
 ## Version
 
-Current version: `0.2.0`
+Current version: `0.2.1`
 
 Every future Web Store update must increment the `version` value in `manifest.json`.
 
@@ -27,7 +27,7 @@ Current permissions:
 ]
 ```
 
-No new permissions were added for v0.2.0.
+No new permissions were added for v0.2.1.
 
 ## Privacy notes
 
@@ -56,11 +56,11 @@ Data handling:
 - Not used for analytics.
 - Not transmitted off-device by the extension.
 
-## Review notes for v0.2.0
+## Review notes for v0.2.1
 
 Suggested reviewer note:
 
-> Version 0.2.0 adds a full-page selector that lets users choose which Chrome windows and whole tab groups to include before exporting a local session file. No new permissions were added. The extension still uses only `tabs` and `tabGroups`, does not request host permissions, does not inject scripts into webpages, and does not transmit data externally.
+> Version 0.2.1 keeps the fast popup action for downloading the full current session and adds a full-page selector that lets users choose which Chrome windows, tab groups, and optionally individual tabs to include before exporting a local session file. Individual tab checkboxes are shown only after the user expands a window row with the + button. No new permissions were added. The extension still uses only `tabs` and `tabGroups`, does not request host permissions, does not inject scripts into webpages, and does not transmit data externally.
 
 ## Files reviewers may inspect
 
