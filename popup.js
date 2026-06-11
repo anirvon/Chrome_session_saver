@@ -1,18 +1,17 @@
 /*
- * Popup UI for Session TXT/JSON Saver.
+ * Popup UI for Chrome Session Saver.
  *
- * The popup only handles user interaction and local file reading/downloading.
- * Chrome session capture/import work is delegated to background.js.
+ * The popup stays intentionally compact. Export selection happens on a full
+ * extension page because real browser sessions can contain many windows and
+ * tab groups. Import still works directly from the popup.
  */
 
 const statusEl = document.getElementById("status");
-const exportJsonButton = document.getElementById("export-json");
-const exportTxtButton = document.getElementById("export-txt");
+const openSelectorButton = document.getElementById("open-selector");
 const importButton = document.getElementById("import-session");
 const sessionFileInput = document.getElementById("session-file");
 
-exportJsonButton.addEventListener("click", () => exportSession("json"));
-exportTxtButton.addEventListener("click", () => exportSession("txt"));
+openSelectorButton.addEventListener("click", openSelectorPage);
 importButton.addEventListener("click", importSelectedSession);
 
 function getCheckbox(id) {
@@ -20,12 +19,20 @@ function getCheckbox(id) {
 }
 
 function setBusy(isBusy) {
-  exportJsonButton.disabled = isBusy;
-  exportTxtButton.disabled = isBusy;
+  openSelectorButton.disabled = isBusy;
   importButton.disabled = isBusy;
 }
 
+function clearStatus() {
+  statusEl.textContent = "";
+  statusEl.className = "status hidden";
+}
+
 function setStatus(message, kind = "") {
+  if (!message) {
+    clearStatus();
+    return;
+  }
   statusEl.textContent = message;
   statusEl.className = `status ${kind}`.trim();
 }
@@ -51,63 +58,27 @@ function sendMessage(message) {
   });
 }
 
-async function exportSession(extension) {
+async function openSelectorPage() {
   setBusy(true);
-  setStatus("Capturing current Chrome windows and tabs...");
-
   try {
-    const options = {
-      includePopupWindows: getCheckbox("include-popup-windows"),
-      includeWindowGeometry: getCheckbox("include-window-geometry"),
-      includeIncognito: getCheckbox("include-incognito")
-    };
-
-    const response = await sendMessage({ type: "CAPTURE_SESSION", options });
-    const session = response.session;
-    const json = JSON.stringify(session, null, 2);
-    const filenameBase = session.suggestedFilenameBase || "sessions";
-    const filename = `${filenameBase}.${extension}`;
-
-    downloadTextFile(filename, json, "application/json;charset=utf-8");
-
-    const windowCount = session.windows.length;
-    const tabCount = session.windows.reduce((sum, win) => sum + (win.tabs ? win.tabs.length : 0), 0);
-    const groupCount = session.windows.reduce((sum, win) => sum + (win.groups ? win.groups.length : 0), 0);
-
-    setStatus(
-      `Downloaded ${filename}\nSaved ${windowCount} window(s), ${tabCount} tab(s), and ${groupCount} tab group(s).`,
-      "success"
-    );
+    await chrome.tabs.create({ url: chrome.runtime.getURL("export.html"), active: true });
+    window.close();
   } catch (error) {
-    setStatus(`Export failed: ${error.message}`, "error");
+    setStatus(`Not ready: Could not open selector page. ${error.message}`, "error");
   } finally {
     setBusy(false);
   }
 }
 
-function downloadTextFile(filename, text, mimeType) {
-  const blob = new Blob([text], { type: mimeType });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-
-  // Let Chrome start the download before revoking the object URL.
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
 async function importSelectedSession() {
   const file = sessionFileInput.files && sessionFileInput.files[0];
   if (!file) {
-    setStatus("Choose a sessions.json or sessions.txt file first.", "warning");
+    setStatus("Not ready: Choose a sessions.json or sessions.txt file first.", "warning");
     return;
   }
 
   setBusy(true);
-  setStatus(`Reading ${file.name}...`);
+  setStatus(`Reading ${file.name}...`, "info");
 
   try {
     const text = await file.text();
@@ -122,7 +93,7 @@ async function importSelectedSession() {
       allowIncognitoRestore: getCheckbox("allow-incognito-restore")
     };
 
-    setStatus("Importing session into new Chrome windows...");
+    setStatus("Importing session into new Chrome windows...", "info");
     const response = await sendMessage({ type: "IMPORT_SESSION", session, options });
     const report = response.result;
 

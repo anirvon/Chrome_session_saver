@@ -1,51 +1,73 @@
-# Chrome Web Store listing draft
+# Chrome Web Store Listing Draft
 
 ## Name
 
-Session TXT/JSON Saver
+Chrome Session Saver
 
 ## Short description
 
-Save and restore Chrome windows, tabs, and tab groups using a local sessions.json or sessions.txt file.
+Export and import selected Chrome windows, tabs, and tab groups using local session files.
 
 ## Detailed description
 
-Session TXT/JSON Saver is a simple local session manager for Chrome.
+Chrome Session Saver helps you save and restore Chrome browsing sessions using local `sessions.json` or `sessions.txt` files.
 
-Use it to export your currently open Chrome windows, tabs, and tab groups to a local `sessions.json` or `sessions.txt` file. Later, import that file to reopen the saved session in new Chrome windows.
+Use the full-page selector to choose which Chrome windows to export. If a selected window contains tab groups, you can choose which whole tab groups to include. Ungrouped tabs are included automatically when their window is selected. Individual tab selection is not included in this version.
 
 Features:
 
-- Export all accessible normal Chrome windows.
-- Preserve tab order within each window.
-- Preserve Chrome tab groups, including group title, color, and collapsed state.
-- Preserve pinned tabs, active tabs, muted tabs, and optional window size/position.
-- Import saved sessions into new windows without closing your current tabs.
-- Uses local files only.
-- No account, no sync service, no analytics, no cloud upload.
+- Export selected Chrome windows to a local `.json` or `.txt` file
+- Select or unselect whole windows before export
+- Select or unselect whole tab groups inside selected windows
+- Preserve tab order, tab URLs, tab titles, pinned state, active tab state, muted state, window type, optional window geometry, and tab group metadata
+- Restore saved sessions into new Chrome windows without closing current windows
+- Restore tab group title, color, and collapsed state when possible
+- Show warnings for browser limitations that may affect import
+- Work locally with no account, no cloud sync, no analytics, and no external server
 
-Important privacy note: exported session files contain tab URLs and tab titles. Treat them like browsing-history data and store them privately.
+Privacy summary:
 
-Known limitations:
+Chrome Session Saver reads open tab URLs and titles only to provide the user-facing export and import features. Exported session files are created only when the user chooses to download them. Session data is not uploaded, transmitted, sold, shared, or used for advertising or analytics.
 
-- Some internal browser pages such as `chrome://settings` cannot be reopened directly by extensions. If Chrome blocks a URL, the extension opens a placeholder tab showing the original URL.
-- Incognito windows are only available if the user explicitly enables the extension in incognito mode.
-- Chrome does not expose custom user-assigned window names through the standard extension API, so custom window names cannot be saved or restored.
+## Category
 
-## Single purpose field
+Productivity
 
-This extension exports the user's currently open Chrome windows, tabs, and tab groups to a local session file and imports that local file to reopen the saved session in new Chrome windows.
+## Suggested screenshots
 
-## Permission justification field draft
+1. Popup showing the Open window selector button and import controls.
+2. Full-page selector with multiple windows and tab groups.
+3. Warning panel showing export/import limitations.
+4. Import result showing restored window/tab/group counts.
+
+## Single purpose statement
+
+Chrome Session Saver lets users export selected Chrome windows and tab groups to a local session file and later import that file to restore the saved windows, tabs, and tab groups.
+
+## Permission justification
 
 ### tabs
 
-Required to read open tab URLs and titles for the exported session file and to create/update tabs when importing a saved session.
+Required to read open tab URLs, titles, tab order, pinned state, active state, and muted state so the extension can export and later restore the user's selected browser session.
 
 ### tabGroups
 
-Required to read and restore Chrome tab groups, including group title, color, and collapsed state.
+Required to read and restore Chrome tab group metadata, including group membership, title, color, and collapsed state.
 
-## Data use disclosure draft
+## Reviewer notes
 
-This extension handles tab URLs, tab titles, tab order, window metadata, and tab group metadata only for the purpose of exporting/importing a local session file. The extension does not transmit data to external servers, does not use analytics, does not sell data, and does not share data with third parties.
+To test:
+
+1. Install the extension.
+2. Open several normal Chrome windows with several tabs.
+3. Create at least one Chrome tab group.
+4. Click the extension icon.
+5. Click **Open window selector**.
+6. Select or unselect windows and tab groups.
+7. Click **Download .json**.
+8. Open the extension popup again.
+9. Choose the downloaded file.
+10. Click **Import selected file**.
+11. Confirm that new Chrome windows/tabs open and selected tab groups are restored.
+
+The extension does not require login, accounts, payment, network access, or external services. It does not transmit session data.

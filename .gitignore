@@ -1,0 +1,11 @@
+# Local Web Store packages
+*.zip
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+*.log

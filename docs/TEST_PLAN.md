@@ -1,60 +1,82 @@
-# Test plan
+# Test Plan
 
-Use this checklist before trusting the extension with real sessions or submitting to the Chrome Web Store.
+Use this checklist before pushing to GitHub or submitting to the Chrome Web Store.
 
-## Local load test
+## Install locally
 
-- [ ] Open `chrome://extensions`.
-- [ ] Enable Developer mode.
-- [ ] Load the unpacked `session-txt-saver` folder.
-- [ ] Confirm no manifest errors appear.
-- [ ] Open the popup.
-- [ ] Confirm popup UI loads without console errors.
+1. Open `chrome://extensions`.
+2. Enable Developer mode.
+3. Click Load unpacked.
+4. Select the extension folder containing `manifest.json`.
+5. Confirm the extension loads without errors.
 
-## Export tests
+## Export all selected by default
 
-- [ ] Export one normal window with 2-3 normal tabs.
-- [ ] Export two or more normal windows.
-- [ ] Export a window containing a pinned tab.
-- [ ] Export a window containing a muted tab.
-- [ ] Export a window containing one tab group.
-- [ ] Export a window containing multiple tab groups.
-- [ ] Export as `.json`.
-- [ ] Export as `.txt`.
-- [ ] Open the exported file in a text editor and confirm it is valid JSON.
+1. Open two or more Chrome windows.
+2. Create at least one tab group in one window.
+3. Click the extension icon.
+4. Click Open window selector.
+5. Confirm all windows are selected by default.
+6. Confirm all tab groups are selected by default.
+7. Click Download .json.
+8. Open the file in a text editor.
+9. Confirm the file contains selected windows, tabs, and groups.
 
-## Import tests
+## Unselect a window
 
-- [ ] Import the exported `.json` file.
-- [ ] Import the exported `.txt` file.
-- [ ] Confirm new windows are created.
-- [ ] Confirm current windows were not closed.
-- [ ] Confirm tab order is reasonable.
-- [ ] Confirm tab groups are restored.
-- [ ] Confirm group title/color/collapsed state is restored.
-- [ ] Confirm pinned tabs are restored when the checkbox is enabled.
-- [ ] Confirm muted tabs are restored when the checkbox is enabled.
-- [ ] Confirm active tab restoration works.
+1. Open the selector.
+2. Unselect one window.
+3. Download `.json`.
+4. Confirm the file omits that window and its tabs.
+5. Confirm the warning panel explains that omitted items will not be restored.
 
-## Error handling tests
+## Unselect a tab group
 
-- [ ] Try importing a non-JSON `.txt` file.
-- [ ] Try importing an empty file.
-- [ ] Try importing a JSON object without `windows`.
-- [ ] Save and restore a `chrome://settings` or `chrome://extensions` page and confirm a placeholder tab appears if Chrome blocks it.
+1. Open a window containing at least one tab group and at least one ungrouped tab.
+2. Unselect one tab group.
+3. Download `.json`.
+4. Confirm the unselected group and its tabs are omitted.
+5. Confirm ungrouped tabs in the selected window remain included.
+6. Import the file.
+7. Confirm only selected groups are restored.
 
-## Windows 11-specific tests
+## No selection
 
-- [ ] Export/import on a single monitor.
-- [ ] Export/import on multiple monitors.
-- [ ] Export/import after changing Windows display scaling.
-- [ ] Export/import after disconnecting an external monitor.
-- [ ] Verify restored windows do not appear completely off-screen.
+1. Click Select none.
+2. Confirm export buttons are disabled.
+3. Confirm the status panel says Not ready and gives the reason.
 
-## Incognito tests
+## Import
 
-- [ ] Confirm incognito windows are not captured by default.
-- [ ] Enable the extension in incognito mode.
-- [ ] Export with the incognito checkbox enabled.
-- [ ] Import with the incognito restore checkbox enabled.
-- [ ] Confirm behavior is acceptable if Chrome denies incognito restore.
+1. Export a selected session.
+2. Open the popup.
+3. Choose the exported file.
+4. Click Import selected file.
+5. Confirm new Chrome windows open.
+6. Confirm current windows remain open.
+7. Confirm tab groups are restored when possible.
+
+## Internal URLs
+
+1. Include a tab such as `chrome://settings` if Chrome exposes it.
+2. Export and import.
+3. Confirm blocked URLs produce placeholder tabs instead of breaking import.
+
+## Windows 11 display behavior
+
+1. Export with Save window size/position enabled.
+2. Import on the same monitor layout.
+3. Confirm window position/size is approximately restored.
+4. Change display scaling or monitor layout, if available.
+5. Import again and confirm the extension does not crash if geometry cannot be restored exactly.
+
+## JavaScript syntax check
+
+Optional local check if Node.js is installed:
+
+```powershell
+node --check background.js
+node --check popup.js
+node --check export.js
+node --check unrestored.js
+```

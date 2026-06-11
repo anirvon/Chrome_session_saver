@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Export session - Chrome Session Saver</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="export-body">
+  <main class="page-shell">
+    <header class="page-header">
+      <div>
+        <h1>Export Chrome session</h1>
+        <p class="subtitle">
+          Select whole windows and, where present, whole tab groups. Individual tabs are not shown in this version.
+        </p>
+      </div>
+      <button id="refresh-session" type="button" class="secondary">Refresh window list</button>
+    </header>
+
+    <section class="card settings-card">
+      <h2>Capture options</h2>
+      <div class="option-grid">
+        <label>
+          <input id="include-popup-windows" type="checkbox" checked>
+          Include popup windows
+        </label>
+        <label>
+          <input id="include-window-geometry" type="checkbox" checked>
+          Save window size/position
+        </label>
+        <label>
+          <input id="include-incognito" type="checkbox">
+          Include incognito windows if this extension is allowed in incognito
+        </label>
+      </div>
+      <p class="help small">
+        Chrome Session Saver's own extension pages are excluded automatically so the export page itself is not saved.
+      </p>
+    </section>
+
+    <section id="status" class="status hidden" aria-live="polite"></section>
+
+    <section id="warnings" class="warning-panel hidden" aria-live="polite">
+      <h2>Export/import warnings</h2>
+      <ul id="warnings-list"></ul>
+    </section>
+
+    <section class="toolbar card">
+      <div>
+        <h2>Window selection</h2>
+        <p id="summary" class="help">Loading windows...</p>
+      </div>
+      <div class="button-row wrap">
+        <button id="select-all" type="button" class="secondary">Select all</button>
+        <button id="select-none" type="button" class="secondary">Select none</button>
+        <button id="download-json" type="button">Download .json</button>
+        <button id="download-txt" type="button" class="secondary">Download .txt</button>
+      </div>
+    </section>
+
+    <section id="window-list" class="window-list" aria-live="polite"></section>
+  </main>
+
+  <script src="export.js"></script>
+</body>
+</html>

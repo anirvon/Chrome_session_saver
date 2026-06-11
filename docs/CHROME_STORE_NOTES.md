@@ -1,103 +1,74 @@
-# Chrome Web Store notes
+# Chrome Web Store Submission Notes
 
-These notes are for preparing this local prototype for eventual Chrome Web Store submission.
+## Package
 
-## Extension single purpose
+Upload a ZIP file with `manifest.json` at the root of the ZIP.
 
-Suggested single-purpose statement:
+Recommended PowerShell command from inside the extension folder:
 
-> Session TXT/JSON Saver lets users export their currently open Chrome windows, tabs, and tab groups to a local session file, and later import that local file into new Chrome windows.
-
-Keep this single purpose visible in the store listing and the popup UI.
-
-## Permissions justification
-
-Current manifest permissions:
-
-```json
-"permissions": ["tabs", "tabGroups"]
+```powershell
+Compress-Archive -Path * -DestinationPath ..\chrome-session-saver-0.2.0-webstore.zip -Force
 ```
 
-### `tabs`
+## Version
 
-Needed because the extension must read the user's open tab URLs and titles in order to write them to the local session file. It also uses tab APIs to create, activate, pin, and mute restored tabs during import.
+Current version: `0.2.0`
 
-### `tabGroups`
+Every future Web Store update must increment the `version` value in `manifest.json`.
 
-Needed to read and restore Chrome tab groups, including group title, color, and collapsed state.
+## Permissions
 
-## Permissions deliberately not requested
+Current permissions:
 
-- No `host_permissions` such as `<all_urls>`.
-- No `downloads` permission. Downloads are created from the popup using a user-initiated local Blob download.
-- No `storage` permission. The extension does not store session data internally.
-- No `history` permission.
-- No `bookmarks` permission.
-- No `cookies` permission.
-- No network permissions.
+```json
+[
+  "tabs",
+  "tabGroups"
+]
+```
 
-## Data handling summary
+No new permissions were added for v0.2.0.
 
-The extension handles browsing data only for the user-facing purpose of exporting/importing a local session file.
+## Privacy notes
 
-Data handled:
+The extension handles browsing-related data because session files can contain tab URLs and titles. Disclose this clearly in the Web Store privacy section.
 
-- Tab URLs.
-- Tab titles.
-- Window layout metadata.
-- Tab group titles, colors, and collapsed state.
-- Pinned/active/muted state.
+Key points to include:
 
-Data not handled:
+- The extension reads open tab URLs/titles only to export and restore user-selected browser sessions.
+- Exported session data is saved only to local files created by user action.
+- Import reads only the file selected by the user.
+- No browsing data is sent to the developer or any third party.
+- No analytics, telemetry, advertising, or tracking are used.
+- No account or login is required.
 
-- Page contents.
-- Cookies.
-- Passwords.
-- Form data.
-- Browsing history beyond currently open tabs.
-- Analytics or telemetry.
+## Data use answers
 
-Data sharing:
+Likely data category: Web history or browsing activity, depending on the current Chrome Web Store form wording.
 
-- No data is uploaded.
-- No data is sold.
-- No third parties receive data.
-- The user controls the exported file.
+Purpose: App functionality.
 
-## Privacy policy requirement
+Data handling:
 
-Because this extension handles user browsing data, prepare a public privacy policy URL before submission. A draft is provided in `PRIVACY_POLICY_DRAFT.md`. Edit it for your real developer name, contact address, and hosting location.
+- Not sold.
+- Not shared with third parties.
+- Not used for advertising.
+- Not used for analytics.
+- Not transmitted off-device by the extension.
 
-## Suggested store category
+## Review notes for v0.2.0
 
-Productivity.
+Suggested reviewer note:
 
-## Suggested screenshots
+> Version 0.2.0 adds a full-page selector that lets users choose which Chrome windows and whole tab groups to include before exporting a local session file. No new permissions were added. The extension still uses only `tabs` and `tabGroups`, does not request host permissions, does not inject scripts into webpages, and does not transmit data externally.
 
-1. Popup export controls.
-2. Popup import controls.
-3. Example downloaded `sessions.json` file opened in a text editor.
-4. Restored Chrome window with tab groups.
-5. Placeholder page for a non-restorable internal URL.
+## Files reviewers may inspect
 
-## Manual pre-submission checklist
-
-- [ ] Load unpacked extension in a clean Chrome profile.
-- [ ] Export one window with ungrouped tabs.
-- [ ] Export multiple windows.
-- [ ] Export grouped tabs.
-- [ ] Export pinned tabs.
-- [ ] Import the exported `.json` file.
-- [ ] Import the exported `.txt` file.
-- [ ] Verify import opens new windows and does not close current windows.
-- [ ] Verify bad/malformed JSON shows a friendly error.
-- [ ] Verify a `chrome://settings` or `chrome://extensions` saved URL becomes a placeholder tab if Chrome blocks direct restore.
-- [ ] Verify no remote scripts, analytics, or network calls exist.
-- [ ] Update version number in `manifest.json`.
-- [ ] Create final icons and screenshots.
-- [ ] Host privacy policy publicly.
-- [ ] Fill out the Chrome Web Store data-use certification accurately.
-
-## Store package note
-
-For a real Web Store upload, create a `.zip` containing the extension files. You may include documentation files, but many developers upload only the files needed to run the extension. Do not include unrelated local test data or private session files.
+- `manifest.json`
+- `background.js`
+- `popup.html`
+- `popup.js`
+- `export.html`
+- `export.js`
+- `styles.css`
+- `PRIVACY_POLICY.md`

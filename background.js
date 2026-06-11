@@ -1,17 +1,19 @@
 /*
- * Session TXT/JSON Saver - background service worker
+ * Chrome Session Saver - background service worker
  *
- * This file contains all Chrome API work that should keep running even if the
- * popup closes. The popup sends messages here for capture/import operations.
+ * This file contains all Chrome API work for session capture/import.
+ * UI pages send messages here because the background service worker is the
+ * appropriate place to use privileged Chrome extension APIs.
  *
  * Manifest V3 notes:
  * - Service workers are event-driven and may be stopped when idle.
  * - Keep all code local in the extension package; do not load remote code.
  */
 
-const EXTENSION_NAME = "Session TXT/JSON Saver";
-const EXTENSION_VERSION = "0.1.0";
-const SCHEMA_ID = "session-txt-json-saver";
+const EXTENSION_NAME = "Chrome Session Saver";
+const EXTENSION_VERSION = "0.2.0";
+const SCHEMA_ID = "chrome-session-saver";
+const LEGACY_SCHEMA_ID = "session-txt-json-saver";
 const SCHEMA_VERSION = 1;
 const NO_GROUP_ID = -1;
 
@@ -93,6 +95,7 @@ async function captureCurrentSession(options) {
   const includeWindowGeometry = options.includeWindowGeometry !== false;
   const includePopupWindows = options.includePopupWindows !== false;
   const includeIncognito = options.includeIncognito === true;
+  const excludeOwnExtensionPages = options.excludeOwnExtensionPages !== false;
 
   const windowTypes = includePopupWindows ? ["normal", "popup"] : ["normal"];
   const allWindows = await chromeCall(chrome.windows.getAll, {
@@ -100,10 +103,16 @@ async function captureCurrentSession(options) {
     windowTypes
   });
 
-  const visibleWindows = allWindows.filter((win) => {
-    if (!includeIncognito && win.incognito) return false;
-    return Array.isArray(win.tabs) && win.tabs.length > 0;
-  });
+  const visibleWindows = allWindows
+    .filter((win) => {
+      if (!includeIncognito && win.incognito) return false;
+      return Array.isArray(win.tabs) && win.tabs.length > 0;
+    })
+    .map((win) => ({
+      ...win,
+      tabs: excludeOwnExtensionPages ? win.tabs.filter((tab) => !isOwnExtensionPage(tab)) : win.tabs
+    }))
+    .filter((win) => Array.isArray(win.tabs) && win.tabs.length > 0);
 
   const session = {
     schema: SCHEMA_ID,
@@ -114,19 +123,28 @@ async function captureCurrentSession(options) {
       manifestVersion: 3
     },
     savedAt: new Date().toISOString(),
-    suggestedFilenameBase: `sessions-${nowForFilename()}`,
+    suggestedFilenameBase: `chrome-session-${nowForFilename()}`,
     captureOptions: {
       includeWindowGeometry,
       includePopupWindows,
-      includeIncognito
+      includeIncognito,
+      excludeOwnExtensionPages
     },
-    limitations: [
-      "Some internal browser pages such as chrome:// URLs may not be restorable by extensions.",
-      "Incognito windows are only available if the extension is enabled in incognito mode.",
-      "Chrome does not expose user-assigned window names through the standard extension windows API."
-    ],
+    selection: {
+      mode: "all-accessible-windows",
+      notes: [
+        "This file contains all windows and tab groups selected by the user at export time.",
+        "Individual tab selection is not used in this version; grouped tabs are included or excluded as whole groups."
+      ]
+    },
+    limitations: buildStandardLimitations(),
+    warnings: [],
     windows: []
   };
+
+  if (excludeOwnExtensionPages) {
+    session.warnings.push("Chrome Session Saver's own extension pages were excluded from the export automatically.");
+  }
 
   let savedWindowIndex = 0;
   for (const win of visibleWindows) {
@@ -136,6 +154,22 @@ async function captureCurrentSession(options) {
   }
 
   return session;
+}
+
+function buildStandardLimitations() {
+  return [
+    "Some internal browser pages such as chrome:// URLs may not be restorable by extensions.",
+    "Extension pages such as chrome-extension:// URLs may not be restorable unless Chrome allows that specific URL.",
+    "Local file:// URLs may require the user to allow file URL access for this extension before they can be restored.",
+    "Incognito windows are only available if the extension is enabled in incognito mode.",
+    "Chrome does not expose user-assigned window names through the standard extension windows API.",
+    "Window position and size restoration can vary across monitors, display scaling settings, and operating systems."
+  ];
+}
+
+function isOwnExtensionPage(tab) {
+  const url = tab && (tab.url || tab.pendingUrl || "");
+  return typeof url === "string" && url.startsWith(chrome.runtime.getURL(""));
 }
 
 async function serializeWindow(win, savedWindowIndex, includeWindowGeometry) {
@@ -182,7 +216,8 @@ async function serializeWindow(win, savedWindowIndex, includeWindowGeometry) {
       title: group.title || "",
       color: group.color || "grey",
       collapsed: Boolean(group.collapsed),
-      firstTabIndex: groupFirstTabIndex.get(groupId) ?? 0
+      firstTabIndex: groupFirstTabIndex.get(groupId) ?? 0,
+      tabCount: serializedTabs.filter((tab) => tab.groupKey === groupIdToKey.get(groupId)).length
     }))
     .sort((a, b) => a.firstTabIndex - b.firstTabIndex);
 
@@ -241,6 +276,12 @@ function validateSession(session) {
 
   if (!Array.isArray(session.windows)) {
     throw new Error("The selected file does not contain a windows array.");
+  }
+
+  if (session.schema && ![SCHEMA_ID, LEGACY_SCHEMA_ID].includes(session.schema)) {
+    // Keep this as a warning-compatible validation rather than a hard reject.
+    // Older or manually edited files can still be structurally valid.
+    console.warn(`Unexpected session schema: ${session.schema}`);
   }
 
   if (session.schemaVersion && session.schemaVersion > SCHEMA_VERSION) {
@@ -582,7 +623,6 @@ function normalizeUrlForOpen(url) {
   // return `https://www.google.com/search?q=${encodeURIComponent(trimmed)}`;
   // OR instead open a new tab with:
   return "chrome://newtab/";
-  
 }
 
 function buildUnrestoredUrl(savedTab, reason) {

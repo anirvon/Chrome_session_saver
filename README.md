@@ -1,141 +1,136 @@
-# Session TXT/JSON Saver
+# Chrome Session Saver
 
-A small, dependency-free Chrome extension that exports and imports your open Chrome windows, tabs, and tab groups using a local `sessions.json` or `sessions.txt` file.
+Chrome Session Saver is a Manifest V3 Chrome extension that exports and imports open Chrome windows, tabs, and tab groups using local `sessions.json` or `sessions.txt` files.
 
-This is a first working local prototype. It is designed to be loaded as an unpacked extension during development and later polished for the Chrome Web Store.
+Version `0.2.0` adds a full-page selective export interface. You can choose whole windows and, where present, whole tab groups. Individual tabs are intentionally not exposed as checkboxes in this version.
 
-## What it does
+## Features
 
-- Exports accessible open Chrome windows and tabs.
-- Preserves window grouping by Chrome window.
-- Preserves tab order within each window.
-- Preserves Chrome tab groups, including group title, color, and collapsed state.
-- Preserves pinned tabs, active tabs, muted tabs, and basic window size/position where Chrome allows it.
-- Imports a saved session into new Chrome windows.
-- Does **not** close or overwrite your current windows during import.
-- Does **not** upload session files anywhere.
-- Does **not** use a server, cloud account, analytics, or external JavaScript.
+- Export selected Chrome windows to a local `.json` or `.txt` file.
+- Select or unselect whole windows before exporting.
+- Select or unselect whole Chrome tab groups inside selected windows.
+- Include ungrouped tabs automatically when their window is selected.
+- Preserve tab order, tab URLs, titles, pinned state, active tab state, muted state, window type, optional window geometry, and tab group metadata.
+- Import a saved session into new Chrome windows without closing or overwriting current windows.
+- Restore tab group title, color, and collapsed state when possible.
+- Show warnings before export when selected URLs or browser limitations may affect import.
+- Use local files only; no account, no server, no sync, no analytics, and no remote code.
 
-## Important privacy note
+## Permissions
 
-The exported file contains your tab URLs and tab titles. Treat `sessions.json` or `sessions.txt` like browsing-history data. Store it somewhere private.
+The extension requests only:
 
-## Requirements
+```json
+[
+  "tabs",
+  "tabGroups"
+]
+```
 
-- Google Chrome on desktop.
-- Chrome 89 or newer for the `chrome.tabGroups` API.
-- Tested structurally as a Manifest V3 extension. It should work on Windows 11, macOS, and Linux because it uses Chrome APIs rather than operating-system-specific paths.
+### `tabs`
 
-## Install locally on Windows 11
+Required to read open tab URLs, titles, order, pinned state, active state, and muted state so the extension can export and later restore the user's selected browser session.
 
-1. Download and unzip this project.
+### `tabGroups`
+
+Required to read and restore Chrome tab group metadata, including group membership, group title, group color, and collapsed state.
+
+The extension does not request host permissions and does not inject scripts into webpages.
+
+## Local testing
+
+1. Download or clone this repository.
 2. Open Chrome.
-3. Go to:
-
-   ```text
-   chrome://extensions
-   ```
-
-4. Turn on **Developer mode** in the top-right corner.
+3. Go to `chrome://extensions`.
+4. Turn on **Developer mode**.
 5. Click **Load unpacked**.
-6. Select the unzipped `session-txt-saver` folder. Select the folder itself, not the `.zip` file.
-7. Pin the extension to your toolbar if desired.
-8. Click the extension icon and test **Download .json** or **Download .txt**.
+6. Select the repository folder containing `manifest.json`.
+7. Pin **Chrome Session Saver** to the toolbar.
+8. Click the extension icon.
+9. Click **Open window selector**.
+10. Select the windows and tab groups you want to save.
+11. Click **Download .json** or **Download .txt**.
+12. To test import, click the extension icon again, choose the exported file, and click **Import selected file**.
 
-## How to export a session
+## Creating a Chrome Web Store ZIP
 
-1. Open the Chrome windows and tabs you want to save.
-2. Click the Session Saver extension icon.
-3. Choose export options.
-4. Click **Download .json** or **Download .txt**.
-5. Chrome will download a file like:
+The Chrome Web Store upload ZIP must contain `manifest.json` at the root of the ZIP, not inside an extra parent folder.
 
-   ```text
-   sessions-20260604-153012.json
-   ```
+From PowerShell on Windows 11, run this from inside the extension folder:
 
-The `.txt` file contains the same JSON data as the `.json` file. The `.txt` option is included because you asked for a `sessions.txt` workflow.
+```powershell
+Compress-Archive -Path * -DestinationPath ..\chrome-session-saver-0.2.0-webstore.zip -Force
+```
 
-## How to import a session
+Check the ZIP root:
 
-1. Click the Session Saver extension icon.
-2. Choose a saved `sessions.json` or `sessions.txt` file.
-3. Choose restore options.
-4. Click **Import selected file**.
-5. The extension opens the saved session in new Chrome windows.
+```powershell
+tar -tf ..\chrome-session-saver-0.2.0-webstore.zip | Select-Object -First 20
+```
 
-Your existing windows are not closed or replaced.
+The first files should look like:
 
-## Known limitations
+```text
+manifest.json
+background.js
+popup.html
+popup.js
+export.html
+export.js
+styles.css
+...
+```
 
-Chrome intentionally restricts what extensions can do. These limitations are expected:
+## Selective export behavior
 
-- Some `chrome://...` pages, extension pages, and browser-internal pages may not be restorable by an extension. When that happens, the extension opens a local placeholder page showing the original URL.
-- Incognito windows are only visible to the extension if you explicitly enable the extension in incognito mode from `chrome://extensions`. Importing incognito windows also requires the import checkbox and Chrome permission.
-- Chrome's extension API does not expose user-assigned Chrome window names, so this extension cannot save or restore custom window names.
-- If you import on a different monitor layout, saved window positions may not match perfectly. The code sanitizes extreme coordinates to behave better on Windows 11 multi-monitor setups.
-- Tab favicons are not restored; Chrome reloads them normally when each page loads.
-- This first version does not sync, auto-save, schedule backups, or use a native companion program.
+The full-page selector works at two levels:
+
+1. **Window selection** — selecting a window includes its ungrouped tabs and any selected groups inside that window.
+2. **Tab group selection** — selecting a tab group includes all tabs in that group. Unselecting a group omits all tabs in that group.
+
+Individual tab selection is not part of version `0.2.0`.
+
+The extension automatically excludes its own extension pages, such as the export page, so those pages are not accidentally written into the session file.
+
+## Import behavior
+
+Import always opens saved sessions in new Chrome windows. It never closes or overwrites existing windows.
+
+Some URLs may not be restorable directly by a Chrome extension. Examples include some `chrome://`, `chrome-extension://`, `edge://`, `about:`, and `file://` URLs. When Chrome blocks a URL, the extension creates an explanatory placeholder tab containing the original URL so the user can copy it manually.
 
 ## File format
 
-The file is JSON, even when saved as `.txt`. The root object contains:
+The extension saves JSON data. Files may be named `.json` or `.txt`; both contain the same JSON structure.
 
-- `schema`
-- `schemaVersion`
-- `savedAt`
-- `windows[]`
-- each window's `tabs[]`
-- each window's `groups[]`
+The exported file includes:
 
-See `docs/sample-session.json` for a small example.
+- schema and schema version
+- export timestamp
+- selected windows
+- selected tabs
+- selected tab groups
+- limitations and warnings
+- selection metadata describing omitted windows/groups/tabs
 
-## Project structure
+## Privacy
 
-```text
-session-txt-saver/
-├── manifest.json
-├── background.js
-├── popup.html
-├── popup.js
-├── styles.css
-├── unrestored.html
-├── unrestored.js
-├── icons/
-│   ├── icon16.png
-│   ├── icon32.png
-│   ├── icon48.png
-│   └── icon128.png
-└── docs/
-    ├── CHROME_STORE_NOTES.md
-    ├── PRIVACY_POLICY_DRAFT.md
-    ├── STORE_LISTING_DRAFT.md
-    ├── TEST_PLAN.md
-    └── sample-session.json
-```
+Session files can contain sensitive browsing information, including tab URLs and page titles. Treat exported files as private.
 
-## Development notes
+The extension does not transmit exported data. Everything stays local to the user's browser and downloaded files.
 
-This extension has no build step. After editing files:
+See [`PRIVACY_POLICY.md`](PRIVACY_POLICY.md) for the full policy draft.
 
-1. Go to `chrome://extensions`.
-2. Click the reload icon on the Session Saver card.
-3. Reopen the popup.
+## Version history
 
-To debug:
+### 0.2.0
 
-- Right-click the popup and choose **Inspect**.
-- Go to `chrome://extensions`, find the extension, and inspect the service worker for background errors.
+- Renamed extension to **Chrome Session Saver**.
+- Added a full-page selective export UI.
+- Added window-level and tab-group-level export selection.
+- Added export/import warnings.
+- Removed the default "Ready" status panel from the popup.
+- Kept permissions unchanged: `tabs` and `tabGroups` only.
 
-## Permissions used
+### 0.1.0
 
-```json
-"permissions": ["tabs", "tabGroups"]
-```
-
-Why:
-
-- `tabs`: needed to read tab URLs/titles and to create/update tabs during import.
-- `tabGroups`: needed to read and restore Chrome tab group titles, colors, and collapsed state.
-
-No host permissions are requested. No downloads permission is requested; the popup uses a local `Blob` download initiated by the user's click.
+- Initial local export/import prototype.

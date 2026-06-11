@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Session TXT/JSON Saver",
+  "name": "Chrome Session Saver",
   "short_name": "Session Saver",
-  "version": "0.1.0",
-  "description": "Export and import open Chrome windows, tabs, and tab groups using a local sessions.json or sessions.txt file.",
+  "version": "0.2.0",
+  "description": "Export and import open Chrome windows, tabs, and tab groups using local sessions.json or sessions.txt files.",
   "minimum_chrome_version": "89",
   "offline_enabled": true,
   "permissions": [
@@ -11,7 +11,7 @@
     "tabGroups"
   ],
   "action": {
-    "default_title": "Session TXT/JSON Saver",
+    "default_title": "Chrome Session Saver",
     "default_popup": "popup.html"
   },
   "background": {

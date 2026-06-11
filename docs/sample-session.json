@@ -1,22 +1,40 @@
 {
-  "schema": "session-txt-json-saver",
+  "schema": "chrome-session-saver",
   "schemaVersion": 1,
   "exportedBy": {
-    "name": "Session TXT/JSON Saver",
-    "version": "0.1.0",
+    "name": "Chrome Session Saver",
+    "version": "0.2.0",
     "manifestVersion": 3
   },
-  "savedAt": "2026-06-04T12:00:00.000Z",
-  "suggestedFilenameBase": "sessions-20260604-120000",
+  "savedAt": "2026-06-10T12:00:00.000Z",
+  "suggestedFilenameBase": "chrome-session-selected-20260610-120000",
   "captureOptions": {
     "includeWindowGeometry": true,
     "includePopupWindows": true,
-    "includeIncognito": false
+    "includeIncognito": false,
+    "excludeOwnExtensionPages": true
+  },
+  "selection": {
+    "mode": "selected-windows-and-tab-groups",
+    "individualTabsSelectable": false,
+    "ungroupedTabsBehavior": "Ungrouped tabs are included automatically when their window is selected.",
+    "omitted": {
+      "windows": 0,
+      "groups": 1,
+      "tabs": 2,
+      "emptySelectedWindows": 0
+    }
   },
   "limitations": [
     "Some internal browser pages such as chrome:// URLs may not be restorable by extensions.",
+    "Extension pages such as chrome-extension:// URLs may not be restorable unless Chrome allows that specific URL.",
+    "Local file:// URLs may require the user to allow file URL access for this extension before they can be restored.",
     "Incognito windows are only available if the extension is enabled in incognito mode.",
-    "Chrome does not expose user-assigned window names through the standard extension windows API."
+    "Chrome does not expose user-assigned window names through the standard extension windows API.",
+    "Window position and size restoration can vary across monitors, display scaling settings, and operating systems."
+  ],
+  "warnings": [
+    "This export is selective. It omits 0 window(s), 1 tab group(s), and 2 tab(s); omitted items will not be restored on import."
   ],
   "windows": [
     {
@@ -28,14 +46,14 @@
       "alwaysOnTop": false,
       "geometry": {
         "left": 100,
-        "top": 100,
-        "width": 1200,
-        "height": 800
+        "top": 80,
+        "width": 1280,
+        "height": 900
       },
       "tabs": [
         {
           "savedTabIndex": 0,
-          "url": "https://www.example.com/",
+          "url": "https://example.com/",
           "pendingUrl": null,
           "title": "Example Domain",
           "pinned": false,
@@ -45,7 +63,7 @@
           "muted": false,
           "discarded": false,
           "autoDiscardable": true,
-          "groupKey": "window-0-group-0"
+          "groupKey": null
         },
         {
           "savedTabIndex": 1,
@@ -68,7 +86,8 @@
           "title": "Research",
           "color": "blue",
           "collapsed": false,
-          "firstTabIndex": 0
+          "firstTabIndex": 1,
+          "tabCount": 1
         }
       ]
     }
