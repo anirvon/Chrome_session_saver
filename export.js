@@ -1,10 +1,16 @@
 /*
  * Full-page selective export UI for Chrome Session Saver.
  *
- * v0.2.0 intentionally supports window-level and tab-group-level selection.
- * It does not expose individual tab checkboxes. For selected windows, ungrouped
- * tabs are included automatically; grouped tabs are included only when their
- * whole tab group is selected.
+ * v0.2.1 keeps the default window/group-level selector compact, but each
+ * window row can be expanded with the + button to show individual tabs.
+ *
+ * Selection model:
+ * - All windows and tabs are selected by default.
+ * - Window checkboxes select/unselect every tab in that window.
+ * - Group checkboxes select/unselect every tab in that Chrome tab group.
+ * - Expanded tab checkboxes select/unselect individual tabs.
+ * - Window and group checkboxes become indeterminate when only a subset is
+ *   selected.
  */
 
 const statusEl = document.getElementById("status");
@@ -118,10 +124,29 @@ function initializeSelectionState(session) {
   for (const win of session.windows || []) {
     const windowKey = getWindowKey(win);
     selectionState.set(windowKey, {
-      selected: true,
-      groups: new Map((win.groups || []).map((group) => [group.groupKey, true]))
+      expanded: false,
+      tabs: new Map((win.tabs || []).map((tab) => [getTabKey(tab), true]))
     });
   }
+}
+
+function getOrCreateWindowState(win) {
+  const windowKey = getWindowKey(win);
+  let state = selectionState.get(windowKey);
+  if (!state) {
+    state = {
+      expanded: false,
+      tabs: new Map((win.tabs || []).map((tab) => [getTabKey(tab), true]))
+    };
+    selectionState.set(windowKey, state);
+  }
+
+  for (const tab of win.tabs || []) {
+    const tabKey = getTabKey(tab);
+    if (!state.tabs.has(tabKey)) state.tabs.set(tabKey, true);
+  }
+
+  return state;
 }
 
 function renderWindowList() {
@@ -137,10 +162,12 @@ function renderWindowList() {
 
   for (const [displayIndex, win] of fullSession.windows.entries()) {
     const windowKey = getWindowKey(win);
-    const state = selectionState.get(windowKey);
+    const state = getOrCreateWindowState(win);
     const tabCount = countTabs(win);
     const groupCount = countGroups(win);
     const ungroupedCount = countUngroupedTabs(win);
+    const selectedTabCount = countSelectedTabs(win, state);
+    const windowSelection = getSelectionTriState(selectedTabCount, tabCount);
 
     const article = document.createElement("article");
     article.className = "window-card card";
@@ -153,19 +180,18 @@ function renderWindowList() {
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
-    checkbox.checked = Boolean(state && state.selected);
+    checkbox.checked = windowSelection.checked;
+    checkbox.indeterminate = windowSelection.indeterminate;
     checkbox.dataset.windowKey = windowKey;
     checkbox.addEventListener("change", () => {
-      const current = selectionState.get(windowKey);
-      current.selected = checkbox.checked;
-      selectionState.set(windowKey, current);
+      setAllTabsInWindow(win, checkbox.checked);
       renderWindowList();
       refreshDerivedUi();
     });
 
     const title = document.createElement("span");
     title.className = "window-title";
-    title.textContent = buildWindowTitle(win, displayIndex, tabCount, groupCount);
+    title.textContent = buildWindowTitle(win, displayIndex, tabCount, groupCount, selectedTabCount);
 
     label.appendChild(checkbox);
     label.appendChild(title);
@@ -173,68 +199,182 @@ function renderWindowList() {
 
     const meta = document.createElement("div");
     meta.className = "window-meta";
-    meta.textContent = buildWindowMeta(win, ungroupedCount);
+    meta.textContent = buildWindowMeta(win, ungroupedCount, selectedTabCount, tabCount);
     header.appendChild(meta);
+
+    const expandButton = document.createElement("button");
+    expandButton.type = "button";
+    expandButton.className = "icon-button expand-button";
+    expandButton.textContent = state.expanded ? "−" : "+";
+    expandButton.title = state.expanded ? "Collapse tab list" : "Expand tab list";
+    expandButton.setAttribute("aria-label", state.expanded ? "Collapse tab list" : "Expand tab list");
+    expandButton.setAttribute("aria-expanded", String(state.expanded));
+    expandButton.addEventListener("click", () => {
+      state.expanded = !state.expanded;
+      selectionState.set(windowKey, state);
+      renderWindowList();
+      refreshDerivedUi();
+    });
+    header.appendChild(expandButton);
 
     article.appendChild(header);
 
     if (groupCount > 0) {
-      const groupsSection = document.createElement("div");
-      groupsSection.className = "groups-section";
+      article.appendChild(renderGroupSelectionSection(win, state));
+    }
 
-      const groupIntro = document.createElement("p");
-      groupIntro.className = "help small";
-      groupIntro.textContent = "Grouped tabs are included only when their whole group is selected.";
-      groupsSection.appendChild(groupIntro);
-
-      for (const group of win.groups) {
-        const groupState = state.groups.get(group.groupKey) !== false;
-        const groupLabel = document.createElement("label");
-        groupLabel.className = "group-checkbox-label";
-
-        const groupCheckbox = document.createElement("input");
-        groupCheckbox.type = "checkbox";
-        groupCheckbox.checked = groupState;
-        groupCheckbox.disabled = !state.selected;
-        groupCheckbox.dataset.windowKey = windowKey;
-        groupCheckbox.dataset.groupKey = group.groupKey;
-        groupCheckbox.addEventListener("change", () => {
-          const current = selectionState.get(windowKey);
-          current.groups.set(group.groupKey, groupCheckbox.checked);
-          selectionState.set(windowKey, current);
-          refreshDerivedUi();
-        });
-
-        const groupText = document.createElement("span");
-        groupText.textContent = buildGroupTitle(group);
-
-        groupLabel.appendChild(groupCheckbox);
-        groupLabel.appendChild(groupText);
-        groupsSection.appendChild(groupLabel);
-      }
-
-      article.appendChild(groupsSection);
+    if (state.expanded) {
+      article.appendChild(renderExpandedWindowSection(win, state));
     }
 
     windowListEl.appendChild(article);
   }
 }
 
-function buildWindowTitle(win, displayIndex, tabCount, groupCount) {
+function renderGroupSelectionSection(win, state) {
+  const groupsSection = document.createElement("div");
+  groupsSection.className = "groups-section";
+
+  const groupIntro = document.createElement("p");
+  groupIntro.className = "help small";
+  groupIntro.textContent = "Grouped tabs can be included/excluded as whole groups here. Use + to expand a window and select individual tabs.";
+  groupsSection.appendChild(groupIntro);
+
+  for (const group of win.groups || []) {
+    groupsSection.appendChild(renderGroupCheckboxLabel(win, state, group, false));
+  }
+
+  return groupsSection;
+}
+
+function renderExpandedWindowSection(win, state) {
+  const section = document.createElement("div");
+  section.className = "expanded-window-section";
+
+  const help = document.createElement("p");
+  help.className = "help small";
+  help.textContent = "Expanded view: select individual tabs as needed. Partial tab groups will be restored with only the selected tabs.";
+  section.appendChild(help);
+
+  const ungroupedTabs = (win.tabs || []).filter((tab) => !tab.groupKey);
+  if (ungroupedTabs.length > 0) {
+    const ungroupedSection = document.createElement("div");
+    ungroupedSection.className = "tab-subsection";
+
+    const header = document.createElement("div");
+    header.className = "tab-subsection-header";
+    header.textContent = `Ungrouped tabs • ${ungroupedTabs.length}`;
+    ungroupedSection.appendChild(header);
+
+    for (const tab of ungroupedTabs) {
+      ungroupedSection.appendChild(renderTabCheckboxLabel(win, state, tab));
+    }
+
+    section.appendChild(ungroupedSection);
+  }
+
+  for (const group of win.groups || []) {
+    const groupTabs = (win.tabs || []).filter((tab) => tab.groupKey === group.groupKey);
+    if (groupTabs.length === 0) continue;
+
+    const groupSection = document.createElement("div");
+    groupSection.className = "tab-subsection";
+
+    const groupHeader = document.createElement("div");
+    groupHeader.className = "tab-subsection-header with-checkbox";
+    groupHeader.appendChild(renderGroupCheckboxLabel(win, state, group, true));
+    groupSection.appendChild(groupHeader);
+
+    for (const tab of groupTabs) {
+      groupSection.appendChild(renderTabCheckboxLabel(win, state, tab));
+    }
+
+    section.appendChild(groupSection);
+  }
+
+  return section;
+}
+
+function renderGroupCheckboxLabel(win, state, group, compact) {
+  const groupTabs = (win.tabs || []).filter((tab) => tab.groupKey === group.groupKey);
+  const selectedCount = groupTabs.filter((tab) => isTabSelected(state, tab)).length;
+  const triState = getSelectionTriState(selectedCount, groupTabs.length);
+
+  const groupLabel = document.createElement("label");
+  groupLabel.className = compact ? "group-checkbox-label compact" : "group-checkbox-label";
+
+  const groupCheckbox = document.createElement("input");
+  groupCheckbox.type = "checkbox";
+  groupCheckbox.checked = triState.checked;
+  groupCheckbox.indeterminate = triState.indeterminate;
+  groupCheckbox.dataset.windowKey = getWindowKey(win);
+  groupCheckbox.dataset.groupKey = group.groupKey;
+  groupCheckbox.addEventListener("change", () => {
+    setAllTabsInGroup(win, group.groupKey, groupCheckbox.checked);
+    renderWindowList();
+    refreshDerivedUi();
+  });
+
+  const groupText = document.createElement("span");
+  groupText.textContent = buildGroupTitle(group, selectedCount, groupTabs.length);
+
+  groupLabel.appendChild(groupCheckbox);
+  groupLabel.appendChild(groupText);
+  return groupLabel;
+}
+
+function renderTabCheckboxLabel(win, state, tab) {
+  const label = document.createElement("label");
+  label.className = "tab-checkbox-label";
+
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.checked = isTabSelected(state, tab);
+  checkbox.dataset.windowKey = getWindowKey(win);
+  checkbox.dataset.tabKey = getTabKey(tab);
+  checkbox.addEventListener("change", () => {
+    state.tabs.set(getTabKey(tab), checkbox.checked);
+    selectionState.set(getWindowKey(win), state);
+    renderWindowList();
+    refreshDerivedUi();
+  });
+
+  const text = document.createElement("span");
+  text.className = "tab-label-text";
+
+  const title = document.createElement("span");
+  title.className = "tab-title";
+  title.textContent = tab.title && tab.title.trim() ? tab.title.trim() : "Untitled tab";
+
+  const url = document.createElement("span");
+  url.className = "tab-url";
+  url.textContent = tab.url || tab.pendingUrl || "chrome://newtab/";
+
+  text.appendChild(title);
+  text.appendChild(url);
+  label.appendChild(checkbox);
+  label.appendChild(text);
+  return label;
+}
+
+function buildWindowTitle(win, displayIndex, tabCount, groupCount, selectedTabCount) {
   const parts = [`Window ${displayIndex + 1}`];
   if (win.incognito) parts.push("incognito");
   if (win.type && win.type !== "normal") parts.push(win.type);
-  parts.push(`${tabCount} tab${tabCount === 1 ? "" : "s"}`);
+  parts.push(`${selectedTabCount}/${tabCount} tab${tabCount === 1 ? "" : "s"} selected`);
   parts.push(`${groupCount} group${groupCount === 1 ? "" : "s"}`);
   return parts.join(" • ");
 }
 
-function buildWindowMeta(win, ungroupedCount) {
+function buildWindowMeta(win, ungroupedCount, selectedTabCount, tabCount) {
   const bits = [];
   if (ungroupedCount > 0) {
-    bits.push(`${ungroupedCount} ungrouped tab${ungroupedCount === 1 ? "" : "s"} included when this window is selected`);
+    bits.push(`${ungroupedCount} ungrouped tab${ungroupedCount === 1 ? "" : "s"}`);
   } else {
     bits.push("No ungrouped tabs");
+  }
+  if (selectedTabCount === 0 && tabCount > 0) {
+    bits.push("window omitted unless tabs are reselected");
   }
   if (win.state) bits.push(`state: ${win.state}`);
   if (win.geometry && win.geometry.width && win.geometry.height) {
@@ -243,24 +383,48 @@ function buildWindowMeta(win, ungroupedCount) {
   return bits.join(" • ");
 }
 
-function buildGroupTitle(group) {
+function buildGroupTitle(group, selectedCount, totalCount) {
   const name = group.title && group.title.trim() ? group.title.trim() : "Untitled group";
-  const count = group.tabCount || 0;
   const color = group.color || "grey";
   const collapsed = group.collapsed ? "collapsed" : "expanded";
-  return `${name} • ${count} tab${count === 1 ? "" : "s"} • ${color} • ${collapsed}`;
+  return `${name} • ${selectedCount}/${totalCount} tab${totalCount === 1 ? "" : "s"} selected • ${color} • ${collapsed}`;
 }
 
 function setAllWindowsSelected(selected) {
-  for (const [windowKey, state] of selectionState.entries()) {
-    state.selected = selected;
-    for (const groupKey of state.groups.keys()) {
-      state.groups.set(groupKey, selected);
-    }
-    selectionState.set(windowKey, state);
+  for (const win of fullSession.windows || []) {
+    setAllTabsInWindow(win, selected);
   }
   renderWindowList();
   refreshDerivedUi();
+}
+
+function setAllTabsInWindow(win, selected) {
+  const state = getOrCreateWindowState(win);
+  for (const tab of win.tabs || []) {
+    state.tabs.set(getTabKey(tab), selected);
+  }
+  selectionState.set(getWindowKey(win), state);
+}
+
+function setAllTabsInGroup(win, groupKey, selected) {
+  const state = getOrCreateWindowState(win);
+  for (const tab of win.tabs || []) {
+    if (tab.groupKey === groupKey) {
+      state.tabs.set(getTabKey(tab), selected);
+    }
+  }
+  selectionState.set(getWindowKey(win), state);
+}
+
+function isTabSelected(state, tab) {
+  return state.tabs.get(getTabKey(tab)) !== false;
+}
+
+function getSelectionTriState(selectedCount, totalCount) {
+  return {
+    checked: totalCount > 0 && selectedCount === totalCount,
+    indeterminate: selectedCount > 0 && selectedCount < totalCount
+  };
 }
 
 function refreshDerivedUi() {
@@ -277,7 +441,7 @@ function refreshDerivedUi() {
   renderWarnings(warnings);
 
   if (counts.tabs === 0) {
-    setStatus("Not ready: Select at least one window containing at least one tab before exporting.", "warning");
+    setStatus("Not ready: Select at least one tab before exporting.", "warning");
     setDownloadButtonsEnabled(false);
   } else {
     clearStatus();
@@ -297,32 +461,18 @@ function buildSelectedSession() {
   const omitted = {
     windows: 0,
     groups: 0,
+    partialGroups: 0,
     tabs: 0,
     emptySelectedWindows: 0
   };
 
   for (const win of fullSession.windows || []) {
-    const windowKey = getWindowKey(win);
-    const state = selectionState.get(windowKey);
-    if (!state || !state.selected) {
-      omitted.windows += 1;
-      omitted.tabs += countTabs(win);
-      omitted.groups += countGroups(win);
-      continue;
-    }
-
-    const selectedGroupKeys = new Set();
-    for (const group of win.groups || []) {
-      if (state.groups.get(group.groupKey) !== false) {
-        selectedGroupKeys.add(group.groupKey);
-      } else {
-        omitted.groups += 1;
-      }
-    }
-
+    const state = getOrCreateWindowState(win);
     const selectedTabs = [];
-    for (const tab of win.tabs || []) {
-      if (!tab.groupKey || selectedGroupKeys.has(tab.groupKey)) {
+    const originalTabs = win.tabs || [];
+
+    for (const tab of originalTabs) {
+      if (isTabSelected(state, tab)) {
         selectedTabs.push({ ...tab });
       } else {
         omitted.tabs += 1;
@@ -330,19 +480,33 @@ function buildSelectedSession() {
     }
 
     if (selectedTabs.length === 0) {
-      omitted.emptySelectedWindows += 1;
+      omitted.windows += 1;
+      omitted.groups += countGroups(win);
+      if (originalTabs.length > 0) omitted.emptySelectedWindows += 1;
       continue;
     }
 
     ensureExactlyOneActiveTab(selectedTabs);
 
-    const selectedGroups = (win.groups || [])
-      .filter((group) => selectedGroupKeys.has(group.groupKey))
-      .filter((group) => selectedTabs.some((tab) => tab.groupKey === group.groupKey))
-      .map((group) => ({
+    const selectedGroups = [];
+    for (const group of win.groups || []) {
+      const totalGroupTabs = originalTabs.filter((tab) => tab.groupKey === group.groupKey).length;
+      const selectedGroupTabs = selectedTabs.filter((tab) => tab.groupKey === group.groupKey).length;
+
+      if (selectedGroupTabs === 0) {
+        omitted.groups += 1;
+        continue;
+      }
+
+      if (selectedGroupTabs < totalGroupTabs) {
+        omitted.partialGroups += 1;
+      }
+
+      selectedGroups.push({
         ...group,
-        tabCount: selectedTabs.filter((tab) => tab.groupKey === group.groupKey).length
-      }));
+        tabCount: selectedGroupTabs
+      });
+    }
 
     selectedWindows.push({
       ...win,
@@ -358,15 +522,16 @@ function buildSelectedSession() {
     exportedBy: {
       ...(fullSession.exportedBy || {}),
       name: "Chrome Session Saver",
-      version: "0.2.0",
+      version: "0.2.1",
       manifestVersion: 3
     },
     savedAt: new Date().toISOString(),
     suggestedFilenameBase: `chrome-session-selected-${nowForFilename()}`,
     selection: {
-      mode: "selected-windows-and-tab-groups",
-      individualTabsSelectable: false,
-      ungroupedTabsBehavior: "Ungrouped tabs are included automatically when their window is selected.",
+      mode: "selected-windows-tab-groups-and-tabs",
+      individualTabsSelectable: true,
+      windowBehavior: "A window is written to the file if it contains at least one selected tab.",
+      groupBehavior: "A tab group is written to the file if it contains at least one selected tab. Partial groups are restored with only the selected tabs.",
       omitted
     },
     windows: selectedWindows
@@ -398,7 +563,7 @@ function buildWarnings(session) {
   const omitted = session.selection && session.selection.omitted ? session.selection.omitted : {};
 
   if (counts.tabs === 0) {
-    warnings.push("No tabs are currently selected. Export is disabled until at least one selected window contains at least one tab.");
+    warnings.push("No tabs are currently selected. Export is disabled until at least one tab is selected.");
   }
 
   if ((omitted.windows || 0) > 0 || (omitted.groups || 0) > 0 || (omitted.tabs || 0) > 0) {
@@ -407,8 +572,12 @@ function buildWarnings(session) {
     );
   }
 
+  if ((omitted.partialGroups || 0) > 0) {
+    warnings.push(`${omitted.partialGroups} tab group(s) are only partially selected. On import, those groups will be recreated with only the selected tabs.`);
+  }
+
   if ((omitted.emptySelectedWindows || 0) > 0) {
-    warnings.push(`${omitted.emptySelectedWindows} selected window(s) became empty after group filtering and will not be written to the file.`);
+    warnings.push(`${omitted.emptySelectedWindows} window(s) contain no selected tabs and will not be written to the file.`);
   }
 
   const selectedProblemUrls = collectPotentiallyUnrestorableUrls(session);
@@ -481,7 +650,7 @@ async function exportSelectedSession(extension) {
   const selectedSession = buildSelectedSession();
   const counts = countSession(selectedSession);
   if (counts.tabs === 0) {
-    setStatus("Not ready: Select at least one window containing at least one tab before exporting.", "warning");
+    setStatus("Not ready: Select at least one tab before exporting.", "warning");
     return;
   }
 
@@ -534,8 +703,16 @@ function countUngroupedTabs(win) {
   return (win.tabs || []).filter((tab) => !tab.groupKey).length;
 }
 
+function countSelectedTabs(win, state) {
+  return (win.tabs || []).filter((tab) => isTabSelected(state, tab)).length;
+}
+
 function getWindowKey(win) {
   return `window-${win.savedWindowIndex}`;
+}
+
+function getTabKey(tab) {
+  return `tab-${tab.savedTabIndex}`;
 }
 
 function nowForFilename() {

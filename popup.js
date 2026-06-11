@@ -1,16 +1,20 @@
 /*
  * Popup UI for Chrome Session Saver.
  *
- * The popup stays intentionally compact. Export selection happens on a full
- * extension page because real browser sessions can contain many windows and
- * tab groups. Import still works directly from the popup.
+ * The popup keeps the fast path fast: users can immediately download the full
+ * current session. Selective export still opens a full extension page because
+ * real browser sessions can contain many windows and tab groups.
  */
 
 const statusEl = document.getElementById("status");
+const downloadFullJsonButton = document.getElementById("download-full-json");
+const downloadFullTxtButton = document.getElementById("download-full-txt");
 const openSelectorButton = document.getElementById("open-selector");
 const importButton = document.getElementById("import-session");
 const sessionFileInput = document.getElementById("session-file");
 
+downloadFullJsonButton.addEventListener("click", () => exportFullSession("json"));
+downloadFullTxtButton.addEventListener("click", () => exportFullSession("txt"));
 openSelectorButton.addEventListener("click", openSelectorPage);
 importButton.addEventListener("click", importSelectedSession);
 
@@ -19,6 +23,8 @@ function getCheckbox(id) {
 }
 
 function setBusy(isBusy) {
+  downloadFullJsonButton.disabled = isBusy;
+  downloadFullTxtButton.disabled = isBusy;
   openSelectorButton.disabled = isBusy;
   importButton.disabled = isBusy;
 }
@@ -56,6 +62,50 @@ function sendMessage(message) {
       resolve(response);
     });
   });
+}
+
+async function exportFullSession(extension) {
+  setBusy(true);
+  clearStatus();
+
+  try {
+    const response = await sendMessage({
+      type: "CAPTURE_SESSION",
+      options: {
+        includePopupWindows: true,
+        includeWindowGeometry: true,
+        includeIncognito: false,
+        excludeOwnExtensionPages: true
+      }
+    });
+
+    const session = response.session;
+    const counts = countSession(session);
+
+    if (counts.tabs === 0) {
+      setStatus("Not ready: No accessible Chrome tabs were found to export.", "warning");
+      return;
+    }
+
+    const json = JSON.stringify(session, null, 2);
+    const filenameBase = session.suggestedFilenameBase || `chrome-session-${nowForFilename()}`;
+    const filename = `${filenameBase}.${extension}`;
+    downloadTextFile(filename, json, "application/json;charset=utf-8");
+
+    let message = `Downloaded ${filename}\nSaved ${counts.windows} window(s), ${counts.tabs} tab(s), and ${counts.groups} tab group(s).`;
+    if (Array.isArray(session.warnings) && session.warnings.length > 0) {
+      message += `\n\nWarnings saved in file:\n- ${session.warnings.slice(0, 3).join("\n- ")}`;
+      if (session.warnings.length > 3) {
+        message += `\n- ...and ${session.warnings.length - 3} more.`;
+      }
+    }
+
+    setStatus(message, session.warnings && session.warnings.length ? "warning" : "success");
+  } catch (error) {
+    setStatus(`Export failed: ${error.message}`, "error");
+  } finally {
+    setBusy(false);
+  }
 }
 
 async function openSelectorPage() {
@@ -124,4 +174,41 @@ async function importSelectedSession() {
   } finally {
     setBusy(false);
   }
+}
+
+function downloadTextFile(filename, text, mimeType) {
+  const blob = new Blob([text], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  // Let Chrome start the download before revoking the object URL.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function countSession(session) {
+  if (!session || !Array.isArray(session.windows)) return { windows: 0, tabs: 0, groups: 0 };
+  return {
+    windows: session.windows.length,
+    tabs: session.windows.reduce((sum, win) => sum + (Array.isArray(win.tabs) ? win.tabs.length : 0), 0),
+    groups: session.windows.reduce((sum, win) => sum + (Array.isArray(win.groups) ? win.groups.length : 0), 0)
+  };
+}
+
+function nowForFilename() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return [
+    d.getFullYear(),
+    pad(d.getMonth() + 1),
+    pad(d.getDate()),
+    "-",
+    pad(d.getHours()),
+    pad(d.getMinutes()),
+    pad(d.getSeconds())
+  ].join("");
 }
